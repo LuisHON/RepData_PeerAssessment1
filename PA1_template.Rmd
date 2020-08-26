@@ -1,25 +1,367 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Reproducible Research Course Project 1 "
+author: "LuisHON"
+date: "25/08/2020"
+output: html_document
 ---
 
+## Introduction
 
-## Loading and preprocessing the data
+-----
+
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the "quantified self" movement -- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+## Data
+
+-----
+
+The data for this assignment can be downloaded from the course web site:
+
+Dataset: Activity monitoring data [52K]
+The variables included in this dataset are:
+
+steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+
+date: The date on which the measurement was taken in YYYY-MM-DD format
+
+interval: Identifier for the 5-minute interval in which measurement was taken
+
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
+
+## Assignment
+
+-----
+
+This assignment will be described in multiple parts. You will need to write a report that answers the questions detailed below. Ultimately, you will need to complete the entire assignment in a single R markdown document that can be processed by knitr and be transformed into an HTML file.
+
+Throughout your report make sure you always include the code that you used to generate the output you present. When writing code chunks in the R markdown document, always use echo = TRUE so that someone else will be able to read the code. This assignment will be evaluated via peer assessment so it is essential that your peer evaluators be able to review the code for your analysis.
+
+For the plotting aspects of this assignment, feel free to use any plotting system in R (i.e., base, lattice, ggplot2)
+
+Fork/clone the GitHub repository created for this assignment. You will submit this assignment by pushing your completed files into your forked repository on GitHub. The assignment submission will consist of the URL to your GitHub repository and the SHA-1 commit ID for your repository state.
+
+NOTE: The GitHub repository also contains the dataset for the assignment so you do not have to download the data separately.
+
+#### Loading and preprocessing the data
+
+Loading libraries
+
+```{r}
+# to show all the code
+knitr::opts_chunk$set(warning=FALSE)
+```
+
+```{r}
+# to load more than one package at time
+library(easypackages)
+```
+
+```{r}
+# libraries()
+libraries("readr", "dplyr", "lattice")
+```
 
 
+Loading the dataset
 
-## What is mean total number of steps taken per day?
+```{r}
+# unzip the original file
+RawFileZip = "repdata_data_activity.zip"
+unzip(RawFileZip)
+```
+
+```{r}
+# Load the data to a dataframe
+data = read.csv(file = "activity.csv", header = TRUE, sep = ",")
+```
+
+Analysing the dataset structure
+
+```{r}
+# view the structure of the dataframe
+str(data)
+
+# view the first 6 observations of the dataframe
+head(data)
+```
+
+Changing the column _date_ **chr** type to a **date** type
+
+```{r}
+# converting the date column to date format
+data$date = as.Date(data$date, format = "%Y-%m-%d")
+
+```
+
+-----
+
+#### 1. What is mean total number of steps taken per day?
+This part of the assignment, you can **ignore** the missing values in the dataset.
+Calculate the total number of steps taken per day
+
+```{r}
+# calculating the total number of steps per day
+total_perDay_NA = 
+          aggregate(x = data$steps,
+                    by = list(data$date),
+                    FUN = sum)
+
+# renaming the columns 
+names(total_perDay_NA) = c("date", "total_steps")
+```
+
+If you do not understand the difference between a histogram and a barplot, research the difference between them.
+
+Make a histogram of the total number of steps taken each day
+
+```{r}
+hist(total_perDay_NA$total_steps, 
+     ylim = c(0,40),
+     main = "Total number of steps taken each day",
+     xlab = "Steps per day",
+     col = "turquoise",
+)
+```
+
+Calculate and report the mean and median of the total number of steps taken per day
+
+```{r}
+# calculating the mean of the total number steps taken per day
+MeanSteps = mean(total_perDay_NA$total_steps, na.rm = TRUE)
+
+MeanSteps
+```
+
+```{r}
+# calculating the median of the total number steps taken per day
+MedianSteps = median(total_perDay_NA$total_steps, na.rm = TRUE)
+
+MedianSteps
+```
+
+-----
+
+#### 2. What is the average daily activity pattern?
+Make a time series plot (i.e. *type* = "**l**") of the 5-minute interval and the average number of steps taken, averaged across all days (y-axis)
 
 
+```{r}
+# obtaining the average number of steps by all days
+average_dailyPatern = 
+     aggregate(x = data$steps,
+               by = list(data$interval),
+               FUN = mean,
+               na.rm = TRUE)
 
-## What is the average daily activity pattern?
+# renaming the columns 
+names(average_dailyPatern) = c("interval", "average_steps")
+```
 
 
+```{r}
+plot(average_dailyPatern$interval,
+     average_dailyPatern$average_steps,
+     type = "l",
+     xlab = "Interval",
+     ylab = "Average number of steps",
+     main = "Average number of steps taken per day"
+)
+```
 
-## Imputing missing values
+-----
+
+#### 3. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+**Imputing missing values**
+
+Note that there are a number of days/intervals where there are missing values (coded as NA).
+The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+```{r}
+# the which.max() function gives the indice of the max number
+maximumNumberSteps = average_dailyPatern[which.max(average_dailyPatern$average_steps), ]
+
+# maximum number of steps
+maximumNumberSteps$interval
+```
+
+Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r}
+# total number of missing values
+total_numberNA = sum(is.na(data$steps))
+total_numberNA 
+```
+
+Devise a strategy for filling in all of the missing values in the dataset.
+The strategy does not need to be sophisticated. For example, you could use the
+mean/median for that day, or the mean for that 5-minute interval, etc.
 
 
+```{r}
+# replacing missing values by the mean number of steps per Interval
+meanValue = mean(average_dailyPatern$average_steps)
+meanValue
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+# A new dataset equal to the original but with the missing data filled in
+newData = data
+
+# analysing the new dataset
+head(newData)
+```
+
+```{r}
+
+# finding the indices with NA
+newNA = which(is.na(newData$steps))
+
+# filling the NA's with the mean value
+newData$steps[newNA] = meanValue
+
+# analysing the new dataset
+head(newData)
+```
+
+##### Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment?  
+
+What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+
+```{r}
+total_StepsDay_Mean = 
+        aggregate(x = newData$steps,
+                by = list(newData$date),
+                FUN = sum)
+
+# renaming the columns
+names(total_StepsDay_Mean) = c("date", "total_steps")
+
+# analysing the new dataset
+head(total_StepsDay_Mean)
+```
+
+```{r}
+hist(total_StepsDay_Mean$total_steps, 
+     main = "Total number of steps taken 
+        each day without NA's",
+     xlab = "Steps per day",
+     col = "turquoise",
+     ylim = c(0,40)
+)
+```
+
+```{r}
+# calculating the mean of total number of steps taken per day
+final_mean = mean(total_StepsDay_Mean$total_steps)
+final_mean
+```
+
+```{r}
+# calculating the median of total number of steps taken per day
+final_median = median(total_StepsDay_Mean$total_steps)
+final_median
+```
+
+
+_Values differ from the estimates from the first part of the assignment?  What is the impact of imputing missing data on the estimates of the total daily number of steps?_
+
+**Ploting a Histograms Comparison**
+
+```{r}
+# configuring the panel for two plots [rows]
+par(mfrow = c(1,2), mar = c(5,4,4,3))
+
+# the first histogram with NA's values
+hist(total_perDay_NA$total_steps/1000, 
+     ylim = c(0,40),
+     main = "Total number of steps 
+        taken each day
+     With NA's",
+     xlab = "Steps per day (x1000)",
+     col = "turquoise",
+)
+
+# the second histogram with NA's values replaced by the mean
+hist(total_StepsDay_Mean$total_steps/1000, 
+     main = "Total number of steps 
+        taken each day With NA's
+        replaced by Mean",
+     xlab = "Steps per day (x1000)",
+     col = "turquoise",
+     ylim = c(0,40)
+)
+
+```
+
+```{markdown}
+There is a change in histogram, because the number 37.3825995807128 [mean]
+now counts in the histogram frequency, where the NA's influenced before, but
+the Mean and Median, the values in fact doesn't have changed since NA's doesn't count at all in this
+operations.
+```
+
+-----
+
+#### 4. Are there differences in activity patterns between weekdays and
+     weekends?
+
+For this part the weekdays() function may be of some help here.
+Use the dataset with the filled-in missing values for this part.
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+
+```{r}
+# creating a new dataset with a column name day and a day of week
+Data4 = mutate(newData, day = weekdays(newData$date))
+
+# analysing the new dataset
+head(Data4)
+```
+
+```{r}
+# creating a new column with 2 levels, weekday and weekend
+Data4 = mutate(Data4, week = ifelse(Data4$day == "sábado" | Data4$day == "domingo",
+        "weekend",
+                "weekday")
+)
+
+# analysing the new dataset again
+head(Data4)
+```
+
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+
+```{r}
+# average number across all weekday days or weekend days
+StepsDay_Average = 
+        aggregate(x = Data4$steps,
+        by = list(Data4$interval,Data4$week),
+        FUN = mean)
+
+# renaming the columns
+names(StepsDay_Average) = c("interval", "dayofweek","average")
+
+# analysing the dataset
+head(StepsDay_Average)
+```
+
+```{markdown}
+As requested in the assignment, the axis will be 5-minute interval (x-axis) and averaged by weekday days or weekend days (y-axis)
+```
+
+
+```{r}
+# using the lattice system to this plot
+with(StepsDay_Average, 
+     xyplot(interval ~ average | dayofweek, 
+            type = "l",      
+            main = "Average by weekday days or weekend days",
+            xlab = "Intervals",
+            ylab = "Average Number of Steps"))
+```
